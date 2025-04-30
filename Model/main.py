@@ -67,7 +67,7 @@ def parse_args():
                       help='Administrative unit level')
     
     # Model configuration
-    parser.add_argument('--dim_opt', type=int, default=1,
+    parser.add_argument('--dim_opt', type=int, default=3,
                       help='Type of each embedding dimension')  # p
     parser.add_argument('--use_multi_gpu', type=str2bool, nargs='?', const=True, default=False,
                       help='Using multiple GPU')  # p
