@@ -187,7 +187,6 @@ bfg-1.14.0.jar
 Data/*
 emd/*
 sig/*
-EDA/*
 
 Model/Results/*
 Preprocess/prompt_construct/dong_prompts
