@@ -21,7 +21,7 @@ We use **prompt-based LLM embeddings (via LLaMA3)** to represent regional contex
 ---
 
 ## 🏗️ Model Architecture
-![Model Architecture](./assets/model.pdf)
+![Model Architecture](./assets/model.png)
 
 
 ## 📂 Data Sources
