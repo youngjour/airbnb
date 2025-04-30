@@ -74,7 +74,7 @@ python main.py \
   --mode 3m \
   --label all \
   --output_dir outputs
-
+```
 ### 📥 Available Embedding Options
 
 You can specify up to 3 input embeddings using `--embed1`, `--embed2`, `--embed3`.  
