@@ -115,9 +115,19 @@ def parse_args():
                        'llm_w': '../Data/Preprocessed_data/Dong/llm_embeddings_new/Airbnb_SSP_w.csv',
                        'llm_wo': '../Data/Preprocessed_data/Dong/llm_embeddings_new/Airbnb_SSP_wo.csv',
                        'road_llm': '../Data/Preprocessed_data/Dong/llm_embeddings_new/road_llm.csv',
-                       'hf_llm': '../Data/Preprocessed_data/Dong/llm_embeddings_new/human_flow_llm.csv'}
-    
-    args.embedding_paths = [embedding_paths_dict[p] for p in [args.embed1, args.embed2, args.embed3] if p is not None]
+                       'hf_llm': '../Data/Preprocessed_data/Dong/llm_embeddings_new/human_flow_llm.csv',
+                       'sgis': '../Preprocess/sgis_manual/sgis_monthly_embedding_aligned_dates.csv'}
+
+    # Allow direct file paths if not in the dictionary
+    embedding_list = []
+    for p in [args.embed1, args.embed2, args.embed3]:
+        if p is not None:
+            if p in embedding_paths_dict:
+                embedding_list.append(embedding_paths_dict[p])
+            else:
+                # Treat as direct file path
+                embedding_list.append(p)
+    args.embedding_paths = embedding_list
     
     # Validate paths
     for path in args.embedding_paths + [args.label_path]:

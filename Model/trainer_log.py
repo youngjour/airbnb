@@ -370,7 +370,7 @@ def train_validate_test(
     optimizer = optim.Adam(model.parameters(), lr=train_config.learning_rate)
     criterion = WeightedMultiTaskLoss(num_tasks=output_dim)   # 매우 영향력이 큰 동들의 영향력을 축소
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='min', factor=0.7, patience=train_config.scheduler_patience, verbose=True
+        optimizer, mode='min', factor=0.7, patience=train_config.scheduler_patience
     )
 
     best_val_loss = float('inf')
