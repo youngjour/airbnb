@@ -237,6 +237,116 @@ class CompanyDataCollector:
             return pd.DataFrame()
 
 
+class BusinessRatioCollector:
+    """Collector for business category distribution ratios from SGIS API."""
+
+    BUSINESS_RATIO_ENDPOINT = "/OpenAPI3/startupbiz/corpdistsummary.json"
+
+    def __init__(self, client: SGISAPIClient):
+        """
+        Initialize business ratio data collector.
+
+        Args:
+            client: Authenticated SGISAPIClient instance
+        """
+        self.client = client
+
+    def get_business_ratios(
+        self,
+        adm_cd: str,
+        year: Optional[str] = None
+    ) -> pd.DataFrame:
+        """
+        Retrieve business category distribution ratios for a specific administrative region.
+
+        This API returns the percentage distribution of businesses across different categories.
+        The ratios are aggregated by large business category codes:
+        - 'C': Retail (소매)
+        - 'G': Accommodation (숙박) - hotels, pensions, motels
+        - 'H': Restaurant/Bar (음식점) - includes cafes and bars
+        - 'D': Beauty/Personal services (이미용/뷰티)
+        - 'F': Entertainment (오락)
+        - 'I': Education (학원)
+        - 'J': Healthcare (병원)
+        - 'K': Other services
+
+        Args:
+            adm_cd: Administrative division code (8-digit dong code)
+            year: Census year (format: "YYYY"). If None, uses latest available
+
+        Returns:
+            DataFrame with aggregated business category ratios including:
+            - retail_ratio: Percentage of retail businesses
+            - accommodation_ratio: Percentage of accommodation businesses
+            - restaurant_ratio: Percentage of restaurant/bar businesses
+        """
+        params = {"adm_cd": adm_cd}
+
+        if year:
+            params["year"] = year
+
+        try:
+            data = self.client.make_request(self.BUSINESS_RATIO_ENDPOINT, params)
+
+            if data.get("errMsg") == "Success":
+                results = data.get("result", [])
+
+                if results:
+                    # Find the dong-level result (not gu or city level)
+                    dong_result = None
+                    for res in results:
+                        if res.get('adm_cd') == adm_cd:
+                            dong_result = res
+                            break
+
+                    if not dong_result:
+                        logger.warning(f"No data found for adm_cd: {adm_cd}, year: {year}")
+                        return pd.DataFrame()
+
+                    theme_list = dong_result.get('theme_list', [])
+
+                    if not theme_list:
+                        logger.warning(f"No theme_list for {adm_cd}, year: {year}")
+                        return pd.DataFrame()
+
+                    # Aggregate ratios by large business category
+                    category_ratios = {}
+                    for theme in theme_list:
+                        b_theme_cd = theme.get('b_theme_cd')
+                        dist_per = float(theme.get('dist_per', 0))
+
+                        if b_theme_cd:
+                            if b_theme_cd not in category_ratios:
+                                category_ratios[b_theme_cd] = 0
+                            category_ratios[b_theme_cd] += dist_per
+
+                    # Extract specific categories of interest
+                    retail_ratio = category_ratios.get('C', 0)
+                    accommodation_ratio = category_ratios.get('G', 0)
+                    restaurant_ratio = category_ratios.get('H', 0)
+
+                    result_df = pd.DataFrame([{
+                        'adm_cd': adm_cd,
+                        'adm_nm': dong_result.get('adm_nm', ''),
+                        'year': year if year else 'latest',
+                        'retail_ratio': retail_ratio,
+                        'accommodation_ratio': accommodation_ratio,
+                        'restaurant_ratio': restaurant_ratio
+                    }])
+
+                    return result_df
+                else:
+                    logger.warning(f"No business ratio data for region: {adm_cd}, year: {year}")
+                    return pd.DataFrame()
+            else:
+                logger.error(f"Failed to retrieve business ratio data: {data.get('errMsg')}")
+                return pd.DataFrame()
+
+        except Exception as e:
+            logger.error(f"Error fetching business ratio data for {adm_cd}: {e}")
+            return pd.DataFrame()
+
+
 class IndustryCodeHelper:
     """Helper to fetch and manage industry classification codes."""
 

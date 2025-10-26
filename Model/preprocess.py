@@ -353,7 +353,9 @@ class DataPreprocessor:
     def extract_features(self, df: pd.DataFrame) -> np.ndarray:
         """Extract features from dataframe."""
         feature_cols = self.get_feature_columns(df)
-        data = df[feature_cols].values
+        # Fill NaN values with 0 (for missing dongs after alignment)
+        df_filled = df[feature_cols].fillna(0)
+        data = df_filled.values
         logger.info(f"Extracted features shape: {data.shape}")
         return data
 

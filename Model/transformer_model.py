@@ -51,6 +51,14 @@ class EmbeddingTransformer(nn.Module):
             self.embedding_dims = [48, 64, 128, 4]
         elif config.dim_opt == 4 and num_inputs==4:
             self.embedding_dims = [64, 48, 64, 4]
+        elif config.dim_opt == 1 and num_inputs==5:  # 4 LLM + 1 extra
+            self.embedding_dims = [48, 48, 48, 48, 4]
+        elif config.dim_opt == 2 and num_inputs==5:
+            self.embedding_dims = [48, 48, 64, 64, 4]
+        elif config.dim_opt == 3 and num_inputs==5:  # dim_opt 3 with 5 inputs
+            self.embedding_dims = [48, 48, 64, 64, 4]
+        elif config.dim_opt == 4 and num_inputs==5:
+            self.embedding_dims = [64, 48, 48, 48, 4]
         elif num_inputs==2:   # Raw 임베딩
             self.embedding_dims = [128, 4]
         elif num_inputs==3:   # Raw 임베딩

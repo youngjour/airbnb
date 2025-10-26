@@ -189,5 +189,11 @@ emd/*
 sig/*
 
 Model/Results/*
+Model/outputs_transformer/*
+Model/outputs_rnn/*
+Model/outputs_lstm/*
+Model/*.log
 Preprocess/prompt_construct/dong_prompts
 Preprocess/prompt_construct/dong_prompts_new
+Preprocess/sgis_manual/sgis_*.csv
+Preprocess/sgis_manual/*_llm*.csv
