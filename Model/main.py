@@ -51,6 +51,8 @@ def parse_args():
                       help='Optional: Path to embedding3 CSV file')
     parser.add_argument('--embed4', type=str, default=None,
                       help='Optional: Path to embedding4 CSV file')
+    parser.add_argument('--embed5', type=str, default=None,
+                      help='Optional: Path to embedding5 CSV file (tourism_llm)')
     parser.add_argument('--label_path', type=str, default='../Data/Preprocessed_data/AirBnB_labels_dong.csv',
                       help='Path to labels CSV file')
     parser.add_argument('--output_dir', type=str, default='outputs_transformer',
@@ -121,6 +123,7 @@ def parse_args():
                        'sgis': '../Preprocess/sgis_manual/sgis_monthly_embedding_aligned_dates.csv',
                        'sgis_improved': '../Preprocess/sgis_manual/sgis_improved_final.csv',
                        # Local embeddings (LLM-generated from SGIS features)
+                       'tourism_llm': '../Preprocess/tmap_tourism/tourism_llm_embeddings_model_period.csv',
                        'sgis_local_llm': '../Preprocess/sgis_manual/sgis_local_llm_embeddings.csv',
                        'sgis_local_llm_v2': '../Preprocess/sgis_manual/sgis_local_llm_embeddings_v2.csv',
                        # Feature selection subsets
@@ -135,7 +138,7 @@ def parse_args():
 
     # Allow direct file paths if not in the dictionary
     embedding_list = []
-    for p in [args.embed1, args.embed2, args.embed3, args.embed4]:
+    for p in [args.embed1, args.embed2, args.embed3, args.embed4, args.embed5]:
         if p is not None:
             if p in embedding_paths_dict:
                 embedding_list.append(embedding_paths_dict[p])

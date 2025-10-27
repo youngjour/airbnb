@@ -59,6 +59,14 @@ class EmbeddingTransformer(nn.Module):
             self.embedding_dims = [48, 48, 64, 64, 4]
         elif config.dim_opt == 4 and num_inputs==5:
             self.embedding_dims = [64, 48, 48, 48, 4]
+        elif config.dim_opt == 1 and num_inputs==6:  # 5 LLM + 1 artifact
+            self.embedding_dims = [48, 48, 48, 48, 48, 4]
+        elif config.dim_opt == 2 and num_inputs==6:  # Match HJ: high Airbnb allocation
+            self.embedding_dims = [48, 48, 128, 48, 48, 4]
+        elif config.dim_opt == 3 and num_inputs==6:  # 5 LLM + artifact (tourism integration)
+            self.embedding_dims = [48, 48, 128, 48, 48, 4]
+        elif config.dim_opt == 4 and num_inputs==6:
+            self.embedding_dims = [64, 48, 128, 48, 48, 4]
         elif num_inputs==2:   # Raw 임베딩
             self.embedding_dims = [128, 4]
         elif num_inputs==3:   # Raw 임베딩
