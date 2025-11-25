@@ -45,9 +45,9 @@ def safe_log1p(x):
 class SlidingWindowDataset(Dataset):
     """Sliding Window 기반 학습을 위한 Dataset"""
     def __init__(self, 
-                 embeddings: List[np.ndarray],
-                 labels: np.ndarray,
-                 window_size: int,  # 추가 인자
+                 embeddings: List[torch.Tensor],  # Changed type hint
+                 labels: torch.Tensor,            # Changed type hint
+                 window_size: int,
                  prediction_horizon: int,
                  start_month: int,
                  end_month: int,
@@ -56,10 +56,11 @@ class SlidingWindowDataset(Dataset):
                  train_stds: Optional[List[np.ndarray]] = None,
                  label_means: Optional[np.ndarray] = None,
                  label_stds: Optional[np.ndarray] = None):
-        embeddings[-1] = safe_log1p(embeddings[-1])  # 마지막 임베딩(라벨 임베딩과 동일한 값) 로그 변환 적용 (나머지 입력은 로그 변환 x)
-        self.embeddings = [torch.tensor(emb, dtype=torch.float32) for emb in embeddings]
-        labels = safe_log1p(labels)                  # y값 로그 변환
-        self.labels = torch.tensor(labels, dtype=torch.float32)
+        
+        # Data is already preprocessed and converted to tensors
+        self.embeddings = embeddings
+        self.labels = labels
+        
         self.prediction_horizon = prediction_horizon
         self.start_month = start_month
         self.end_month = end_month
@@ -82,9 +83,16 @@ class SlidingWindowDataset(Dataset):
             self.emb_means = []
             self.emb_stds = []
 
-            all_train_data = [emb[start_month:end_month] for emb in embeddings]
-
-            for i, emb in enumerate(all_train_data):
+            # Calculate stats using numpy version of data (need to convert back for stats calculation if needed, 
+            # or better yet, calculate stats before converting to tensors in the main loop.
+            # However, to keep changes minimal, we can convert to numpy here just for stats)
+            
+            # Optimization: Calculate stats on the CPU tensors directly or convert to numpy temporarily
+            # Since we need to return numpy arrays for means/stds to be compatible with existing code structure
+            
+            for i, emb_tensor in enumerate(embeddings):
+                emb = emb_tensor[start_month:end_month].numpy()
+                
                 #emb_mean = np.mean(emb, axis=0)        # 동별 정규화 (동 개수, feature 개수)
                 #emb_std = np.std(emb, axis=0)
                 emb_mean = np.mean(emb, axis=(0, 1))  # feature별 정규화
@@ -95,8 +103,9 @@ class SlidingWindowDataset(Dataset):
 
             # self.label_means = np.mean(labels[start_month:end_month], axis=0)  # 동별 정규화 진행
             # self.label_stds = np.std(labels[start_month:end_month], axis=0)    # (동 개수,)
-            self.label_means = np.mean(labels[start_month:end_month], axis=(0, 1))  # feature별 정규화 진행
-            self.label_stds = np.std(labels[start_month:end_month], axis=(0, 1))
+            label_data_numpy = labels[start_month:end_month].numpy()
+            self.label_means = np.mean(label_data_numpy, axis=(0, 1))  # feature별 정규화 진행
+            self.label_stds = np.std(label_data_numpy, axis=(0, 1))
             self.label_stds = np.where(self.label_stds == 0, 1, self.label_stds)
 
         else:
@@ -115,6 +124,10 @@ class SlidingWindowDataset(Dataset):
         """슬라이딩 윈도우를 적용하여 데이터 반환"""
         window = self.windows[idx]
 
+        # Use slicing on the shared tensors. 
+        # clone().detach() is still good practice if we modify data, but here we just read.
+        # To be safe and match previous behavior (returning new tensors), we can keep clone(), 
+        # but the source is now the shared self.embeddings
         x = [emb[window['input_start']:window['input_end']].clone().detach() for emb in self.embeddings]
 
         # 정규화
@@ -317,6 +330,22 @@ def train_validate_test(
     # Label별 데이터 생성 (각 label을 분리)
     label_data = labels  # (months, dongs, 3)
 
+    # ==================================================================================
+    # [Optimization] Pre-process data ONCE here to avoid duplication in Dataset
+    # ==================================================================================
+    # 1. Log transform the last embedding (labels/target) - ONLY ONCE
+    embeddings[-1] = safe_log1p(embeddings[-1])
+    
+    # 2. Log transform labels - ONLY ONCE
+    label_data = safe_log1p(label_data)
+    
+    # 3. Convert to Tensors (Shared memory)
+    # Note: We keep them on CPU until batch generation to save GPU memory if needed, 
+    # but here we are optimizing RAM.
+    embeddings_tensors = [torch.tensor(emb, dtype=torch.float32) for emb in embeddings]
+    label_tensor = torch.tensor(label_data, dtype=torch.float32)
+    # ==================================================================================
+
     # 모델 생성 -> 각 라벨별로 독립적인 모델 생성
     if model_name == 'transformer':
         model = EmbeddingTransformer(model_config, output_dim=output_dim).to(device)
@@ -332,8 +361,8 @@ def train_validate_test(
 
     # ✅ Sliding Window 기반 데이터셋 생성
     train_dataset = SlidingWindowDataset(
-        embeddings=embeddings,
-        labels=label_data,  
+        embeddings=embeddings_tensors, # Pass tensors
+        labels=label_tensor,           # Pass tensors
         window_size=model_config.window_size,
         prediction_horizon=horizon,
         start_month=0,
@@ -349,8 +378,8 @@ def train_validate_test(
     
     # ✅ validation & test 데이터셋 생성
     val_dataset = SlidingWindowDataset(
-        embeddings=embeddings,
-        labels=label_data,  
+        embeddings=embeddings_tensors, # Pass shared tensors
+        labels=label_tensor,           # Pass shared tensors
         window_size=model_config.window_size,
         prediction_horizon=horizon,
         start_month=train_months + (horizon-1) - model_config.window_size,
@@ -451,8 +480,8 @@ def train_validate_test(
     logger.info(f"\nEvaluating on test set...")
     
     test_dataset = SlidingWindowDataset(
-        embeddings=embeddings,
-        labels=label_data,  
+        embeddings=embeddings_tensors, # Pass shared tensors
+        labels=label_tensor,           # Pass shared tensors
         window_size=model_config.window_size,
         prediction_horizon=horizon,
         start_month=train_months + (horizon-1) + val_months + (horizon-1) - model_config.window_size,
