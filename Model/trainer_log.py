@@ -393,8 +393,8 @@ def train_validate_test(
     logger.info(f"====Val windows {val_dataset.__len__()}====")
     
     # DataLoader 생성
-    train_loader = DataLoader(train_dataset, batch_size=train_config.batch_size, shuffle=False)
-    val_loader = DataLoader(val_dataset, batch_size=train_config.batch_size, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=train_config.batch_size, shuffle=False, num_workers=0, pin_memory=False)
+    val_loader = DataLoader(val_dataset, batch_size=train_config.batch_size, shuffle=False, num_workers=0, pin_memory=False)
 
     optimizer = optim.Adam(model.parameters(), lr=train_config.learning_rate)
     criterion = WeightedMultiTaskLoss(num_tasks=output_dim)   # 매우 영향력이 큰 동들의 영향력을 축소
@@ -417,6 +417,8 @@ def train_validate_test(
         model.train()
         train_loss = 0
         num_batches = 0
+        
+        logger.info(f"Epoch {epoch+1} starting batch loop...")
 
         for batch_embeddings, batch_labels in train_loader:
             batch_embeddings = [x.to(device) for x in batch_embeddings]
@@ -495,7 +497,7 @@ def train_validate_test(
     
     logger.info(f"====test windows {test_dataset.__len__()}====")
     
-    test_loader = DataLoader(test_dataset, batch_size=train_config.batch_size, shuffle=False)
+    test_loader = DataLoader(test_dataset, batch_size=train_config.batch_size, shuffle=False, num_workers=0, pin_memory=False)
     test_metrics = evaluate_per_label_multitask(final_model, test_loader, device, horizon)
     real_metrics, preds, actuals = evaluate_per_label_restored_multitask(final_model, test_loader, device, horizon, label_means, label_stds)
     

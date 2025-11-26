@@ -66,3 +66,26 @@ The **Final YJ Model (SGIS + Tourism)** with the baseline configuration (**w=9, 
 ## 5. Verification
 - **Bug Fix**: Verified that `main.py` runs without `AttributeError`.
 - **Optimization**: Verified `trainer_log.py` optimization reduced memory usage and allowed full training.
+
+## 6. Recommended Next Steps
+
+### 6.1 Visualization & Qualitative Analysis (High Priority)
+*   **Action:** Create a script to plot the **Predicted vs. Actual** values for the Test set.
+*   **Goal:** Identify *where* the YJ Model is better. Is it better at predicting peaks (holidays)? Is it better in rural areas (where Tourism data might help more) vs. urban areas?
+
+### 6.2 Stability Check for "Stalled" Models (Optional)
+*   **Action:** If curious, re-run `dim=1` with a significantly lower learning rate (e.g., `1e-5` instead of `1e-4`).
+*   **Goal:** Confirm if "balanced dimensions" are truly inferior or just harder to train.
+
+### 6.3 Feature Importance / Ablation
+*   **Action:** Try "SGIS Only" one more time (since the first attempt had issues) to definitively rank the contributions:
+    1.  Baseline
+    2.  Baseline + SGIS
+    3.  Baseline + Tourism
+    4.  Baseline + SGIS + Tourism (Current Winner)
+
+### 6.4 Prepare for Publication/Presentation
+You have a solid narrative:
+1.  **Problem:** Airbnb demand depends on complex local factors (Roads, Population, Tourism).
+2.  **Method:** Use LLMs to encode these heterogeneous datasets into embeddings.
+3.  **Result:** Integrating all factors works best, *provided* you maintain the primacy of the historical time-series data (as shown by the dimension tuning).
